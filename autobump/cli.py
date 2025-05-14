@@ -26,9 +26,15 @@ def bump(
         current_version, new_version = bump_version_from_git(
             project_file, dry_run=dry_run, verbose=verbose, allow_dirty=allow_dirty
         )
-        typer.secho(
-            f"Suggested bump: {current_version} -> {new_version}", fg=typer.colors.GREEN
-        )
+        if dry_run:
+            typer.secho(
+                f"Dry run. Would bump: {current_version} -> {new_version}",
+                fg=typer.colors.YELLOW,
+            )
+        else:
+            typer.secho(
+                f"Bumped: {current_version} -> {new_version}", fg=typer.colors.GREEN
+            )
     except (NoCommitsError, DirtyRepoError) as e:
         typer.secho(str(e), fg=typer.colors.RED)
 
