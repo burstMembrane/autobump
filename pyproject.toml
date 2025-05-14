@@ -1,6 +1,6 @@
 [project]
 name = "autobump"
-version = "0.2.0"
+version = "0.3.0"
 authors = [{ name = "Liam", email = "info@liampower.dev" }]
 description = "Automatically bump version numbers for your project"
 readme = "README.md"
