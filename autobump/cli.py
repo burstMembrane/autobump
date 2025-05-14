@@ -3,7 +3,12 @@ from pathlib import Path
 
 import typer
 
-from autobump.main import DirtyRepoError, NoCommitsError, bump_version_from_git
+from autobump.main import (
+    DirtyRepoError,
+    NoCommitsError,
+    NoCommitsSinceLastTagError,
+    bump_version_from_git,
+)
 
 app = typer.Typer()
 
@@ -54,7 +59,7 @@ def bump(
             typer.secho(
                 f"Bumped: {current_version} -> {new_version}", fg=typer.colors.GREEN
             )
-    except (NoCommitsError, DirtyRepoError) as e:
+    except (NoCommitsError, DirtyRepoError, NoCommitsSinceLastTagError) as e:
         typer.secho(str(e), fg=typer.colors.RED)
 
 

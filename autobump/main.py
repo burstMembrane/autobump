@@ -84,6 +84,10 @@ class DirtyRepoError(Exception):
     pass
 
 
+class NoCommitsSinceLastTagError(Exception):
+    pass
+
+
 def get_commits_since_last_tag(allow_dirty: bool = False) -> list[dict]:
     repo = Repo(".")
 
@@ -188,7 +192,7 @@ def bump_version_from_git(
         typer.secho(f"Current version: {current_version}", fg=typer.colors.YELLOW)
     commits = get_commits_since_last_tag(allow_dirty=allow_dirty)
     if not commits:
-        raise RuntimeError("No new commits found since last tag.")
+        raise NoCommitsSinceLastTagError("No new commits found since last tag.")
     typer.secho(f"Found {len(commits)} commits since last tag.", fg=typer.colors.YELLOW)
     pretty_print_commits(commits)
     bump = infer_bump(commits)
