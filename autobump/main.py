@@ -272,7 +272,7 @@ def bump_version_from_git(
             steps.append(f"- Create tag: {tag_name_display}")
             if push:
                 steps.append(f"- Push tag {tag_name_display} to origin")
-                steps.append(f"- Push commit to origin")
+                steps.append("- Push commit to origin")
         for step in steps:
             typer.echo(step)
         return current_version, new_version
