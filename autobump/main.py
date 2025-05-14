@@ -131,13 +131,18 @@ def pretty_print_commits(commits: list[dict]) -> None:
         )
 
 
+import difflib
+
+
 def bump_version_from_git(
     project_file: Path,
     allow_dirty: bool = False,
     dry_run: bool = False,
     verbose: bool = False,
+    yes: bool = False,
 ) -> str:
-    doc = tomlkit.parse(project_file.read_text())
+    original_content = project_file.read_text()
+    doc = tomlkit.parse(original_content)
     version_str = doc["project"]["version"]
     if verbose:
         typer.secho(f"Current version: {version_str}", fg=typer.colors.YELLOW)
@@ -152,10 +157,29 @@ def bump_version_from_git(
     bump = infer_bump(commits)
     new_version = compute_new_version(version_str, bump)
 
-    if dry_run:
-        return new_version
-
     doc["project"]["version"] = new_version
-    project_file.write_text(tomlkit.dumps(doc))
+    updated_content = tomlkit.dumps(doc)
+
+    diff = difflib.unified_diff(
+        original_content.splitlines(),
+        updated_content.splitlines(),
+        fromfile="before",
+        tofile="after",
+        lineterm="",
+    )
+    diff_output = "\n".join(diff)
+    typer.secho("Changes to be made:\n", fg=typer.colors.CYAN)
+    typer.echo(diff_output)
+
+    if not yes:
+        confirm = typer.confirm(
+            f"\nDo you want to apply these changes and bump the version to {new_version}?"
+        )
+        if not confirm:
+            typer.secho("Version bump aborted by user.", fg=typer.colors.RED)
+            raise typer.Abort()
+
+    if not dry_run:
+        project_file.write_text(updated_content)
 
     return new_version
