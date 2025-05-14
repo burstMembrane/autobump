@@ -256,13 +256,19 @@ def bump_version_from_git(
                         raise typer.Exit(code=1)
     if dry_run:
         typer.secho(
-            f"Dry run. Would have written changes to {project_file}",
+            "Dry run: the following operations would be performed:",
             fg=typer.colors.YELLOW,
         )
+        steps = []
+        steps.append(f"- Write changes to {project_file}")
         if commit:
-            typer.secho(
-                f"Dry run. Would have committed with message: {final_message}",
-                fg=typer.colors.YELLOW,
-            )
-
-    return current_version, new_version
+            steps.append(f"- Commit with message: {final_message}")
+        if tag:
+            tag_name_display = tag_name or f"v{new_version}"
+            steps.append(f"- Create tag: {tag_name_display}")
+            if push:
+                steps.append(f"- Push tag {tag_name_display} to origin")
+                steps.append(f"- Push commit to origin")
+        for step in steps:
+            typer.echo(step)
+        return current_version, new_version
