@@ -12,6 +12,11 @@ A CLI tool for automatically determining and applying semantic version bumps bas
 - Automate tagging and changelog generation
 - Support dry-run and interactive modes
 - Be extensible to support multiple project types and version formats
+- Different language formats "setup.py", "package.json","Cargo.toml" etc
+
+## Blue Sky
+
+- Add a LLM (local or openAI) to analyze commits in order to infer the version?
 
 ---
 
@@ -94,10 +99,13 @@ autobump tag --push
 ✅ Milestones
 
 M1: MVP (Python-only)
- • Infer bump from git commit messages
- • Read + bump version in pyproject.toml
- • CLI interface (bump, --dry-run)
- • Git tag support
+ ✓ Infer bump from git commit messages
+ ✓ Read + bump version in pyproject.toml
+ ✓ CLI interface (bump, --dry-run)
+ ✓ Git tag support
+ ✓ Git commit with user confirmation and message override
+ ✓ Push tag and commit with fallback for missing upstream
+ ✓ Interactive confirmations (tag, commit) with --yes override
 
 M2: Rust support
  • Support Cargo.toml version updates
@@ -132,6 +140,6 @@ Liam Power (liamfpower@gmail.com)
 
 🏁 Status
 
-🚧 Planning phase. MVP targeting pyproject.toml with Conventional Commit parsing.
+✅ M1 complete. Actively extending tagging, changelog, and multi-language support.
 
 Let me know if you'd like the initial `autobump.py` scaffold or if you want to go straight to implementing M1.
