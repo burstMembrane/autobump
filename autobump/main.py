@@ -6,6 +6,7 @@ from typing import Literal
 import semver
 import tomlkit
 import typer
+from commitizen import defaults
 from git import GitCommandError, Repo
 from rich import print
 
@@ -106,15 +107,21 @@ def get_commits_since_last_tag(allow_dirty: bool = False) -> list[dict]:
     return result
 
 
-def infer_bump(commits: list[dict]) -> Literal["major", "minor", "patch"]:
-    bump = "patch"
-    for c in commits:
-        msg = c["message"]
-        if "BREAKING CHANGE" in msg or re.match(r"^(feat|fix)!:", msg):
-            return "major"
-        elif msg.startswith("feat:"):
-            bump = "minor"
-    return bump
+def infer_bump(commits: list[dict]) -> str:
+    bump_order = ["patch", "minor", "major"]
+    highest_bump = "patch"
+
+    for commit in commits:
+        message = commit["message"]
+        for pattern, level in defaults.bump_map.items():
+            if re.match(pattern, message):
+                # Map Commitizen's level to your bump levels
+                level = level.lower()
+                if bump_order.index(level) > bump_order.index(highest_bump):
+                    highest_bump = level
+                break  # Stop checking other patterns if a match is found
+
+    return highest_bump
 
 
 def pretty_print_commits(commits: list[dict]) -> None:
