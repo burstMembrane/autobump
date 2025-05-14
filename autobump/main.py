@@ -177,6 +177,9 @@ def bump_version_from_git(
     yes: bool = False,
     commit: bool = False,
     commit_message: str | None = None,
+    tag: bool | None = None,
+    push: bool = False,
+    tag_name: str | None = None,
 ) -> tuple[str, str]:
     original_content = project_file.read_text()
     doc = tomlkit.parse(original_content)
@@ -218,6 +221,39 @@ def bump_version_from_git(
             typer.secho(
                 f"Committed with message: {final_message}", fg=typer.colors.GREEN
             )
+            if (
+                tag is None
+                and commit
+                and typer.confirm("Do you want to create a tag for this version?")
+            ) or tag:
+                try:
+                    tag_name = tag_name or f"v{new_version}"
+                    if tag_name in [t.name for t in repo.tags]:
+                        raise RuntimeError(f"Tag '{tag_name}' already exists.")
+                    repo.create_tag(tag_name, message=f"Release {tag_name}")
+                    typer.secho(f"Created git tag: {tag_name}", fg=typer.colors.GREEN)
+                except Exception as e:
+                    typer.secho(f"Error creating tag: {e}", fg=typer.colors.RED)
+                    raise typer.Exit(code=1)
+
+                if push:
+                    try:
+                        if "origin" not in repo.remotes:
+                            raise RuntimeError("No remote named 'origin' found.")
+                        repo.remotes.origin.push(tag_name)
+                        typer.secho(
+                            f"Pushed tag {tag_name} to origin", fg=typer.colors.GREEN
+                        )
+                        if not dry_run:
+                            repo.remotes.origin.push()
+                            typer.secho(
+                                "Pushed commit to origin", fg=typer.colors.GREEN
+                            )
+                    except Exception as e:
+                        typer.secho(
+                            f"Error pushing to remote: {e}", fg=typer.colors.RED
+                        )
+                        raise typer.Exit(code=1)
     if dry_run:
         typer.secho(
             f"Dry run. Would have written changes to {project_file}",

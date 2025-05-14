@@ -22,6 +22,13 @@ def bump(
     commit_message: str | None = typer.Option(
         None, "--commit-message", "-m", help="Commit message"
     ),
+    tag: bool | None = typer.Option(
+        None, "--tag", "-t", help="Create a git tag for the new version"
+    ),
+    push: bool = typer.Option(
+        False, "--push", "-p", help="Push the changes to the remote repository"
+    ),
+    tag_name: str | None = typer.Option(None, "--tag-name", "-n", help="Tag name"),
 ):
     """
     Bump version based on git commit history.
@@ -34,6 +41,9 @@ def bump(
             allow_dirty=allow_dirty,
             commit=commit,
             commit_message=commit_message,
+            tag=tag,
+            push=push,
+            tag_name=tag_name,
         )
         if dry_run:
             typer.secho(
