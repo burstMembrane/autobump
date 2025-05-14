@@ -206,17 +206,27 @@ def bump_version_from_git(
         if not confirm:
             typer.secho("Version bump aborted by user.", fg=typer.colors.RED)
             raise typer.Abort()
+    default_message = f"chore: bump version {current_version} -> {new_version}"
+    final_message = commit_message or default_message
 
     if not dry_run:
         project_file.write_text(updated_content)
         if commit:
             repo = Repo(".")
             repo.git.add(project_file)
-            default_message = f"chore: bump version {current_version} -> {new_version}"
-            final_message = commit_message or default_message
             repo.index.commit(final_message)
             typer.secho(
                 f"Committed with message: {final_message}", fg=typer.colors.GREEN
+            )
+    if dry_run:
+        typer.secho(
+            f"Dry run. Would have written changes to {project_file}",
+            fg=typer.colors.YELLOW,
+        )
+        if commit:
+            typer.secho(
+                f"Dry run. Would have committed with message: {final_message}",
+                fg=typer.colors.YELLOW,
             )
 
     return current_version, new_version
