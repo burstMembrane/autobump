@@ -249,10 +249,19 @@ def bump_version_from_git(
                             f"Pushed tag {tag_name} to origin", fg=typer.colors.GREEN
                         )
                         if not dry_run:
-                            repo.remotes.origin.push()
-                            typer.secho(
-                                "Pushed commit to origin", fg=typer.colors.GREEN
-                            )
+                            try:
+                                current_branch = repo.active_branch.name
+                                repo.git.push(
+                                    "--set-upstream", "origin", current_branch
+                                )
+                                typer.secho(
+                                    "Pushed commit to origin", fg=typer.colors.GREEN
+                                )
+                            except Exception as e:
+                                typer.secho(
+                                    f"Error pushing commit: {e}", fg=typer.colors.RED
+                                )
+                                raise typer.Exit(code=1)
                     except Exception as e:
                         typer.secho(
                             f"Error pushing to remote: {e}", fg=typer.colors.RED
