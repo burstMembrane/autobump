@@ -195,14 +195,6 @@ def bump_version_from_git(
     doc["project"]["version"] = new_version
     updated_content = tomlkit.dumps(doc)
 
-    diff = difflib.unified_diff(
-        original_content.splitlines(),
-        updated_content.splitlines(),
-        fromfile="before",
-        tofile="after",
-        lineterm="",
-    )
-    diff_output = "\n".join(diff)
     typer.secho("Changes:\n", fg=typer.colors.CYAN)
     rich_diff_texts(original_content, updated_content)
 
