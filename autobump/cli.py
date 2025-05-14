@@ -18,13 +18,22 @@ def bump(
     allow_dirty: bool = typer.Option(
         False, "--allow-dirty", help="Allow uncommitted changes"
     ),
+    commit: bool = typer.Option(False, "--commit", "-c", help="Commit the changes"),
+    commit_message: str | None = typer.Option(
+        None, "--commit-message", "-m", help="Commit message"
+    ),
 ):
     """
     Bump version based on git commit history.
     """
     try:
         current_version, new_version = bump_version_from_git(
-            project_file, dry_run=dry_run, verbose=verbose, allow_dirty=allow_dirty
+            project_file,
+            dry_run=dry_run,
+            verbose=verbose,
+            allow_dirty=allow_dirty,
+            commit=commit,
+            commit_message=commit_message,
         )
         if dry_run:
             typer.secho(

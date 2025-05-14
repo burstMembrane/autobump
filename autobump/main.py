@@ -175,7 +175,9 @@ def bump_version_from_git(
     dry_run: bool = False,
     verbose: bool = False,
     yes: bool = False,
-) -> str:
+    commit: bool = False,
+    commit_message: str | None = None,
+) -> tuple[str, str]:
     original_content = project_file.read_text()
     doc = tomlkit.parse(original_content)
     current_version = doc["project"]["version"]
@@ -207,5 +209,14 @@ def bump_version_from_git(
 
     if not dry_run:
         project_file.write_text(updated_content)
+        if commit:
+            repo = Repo(".")
+            repo.git.add(project_file)
+            default_message = f"chore: bump version {current_version} -> {new_version}"
+            final_message = commit_message or default_message
+            repo.index.commit(final_message)
+            typer.secho(
+                f"Committed with message: {final_message}", fg=typer.colors.GREEN
+            )
 
     return current_version, new_version
