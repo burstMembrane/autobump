@@ -1,7 +1,7 @@
 # main.py
+import difflib
 import re
 from pathlib import Path
-from typing import Literal
 
 import semver
 import tomlkit
@@ -9,6 +9,9 @@ import typer
 from commitizen import defaults
 from git import GitCommandError, Repo
 from rich import print
+from rich.console import Console
+from rich.text import Text
+from rich.theme import Theme
 
 
 # Utility message functions
@@ -26,6 +29,41 @@ def error(msg: str):
 
 def success(msg: str):
     typer.secho(msg, fg=typer.colors.GREEN)
+
+
+# Rich diff styles
+EQUAL_STYLE = "equal"
+DELETE_STYLE = "delete"
+INSERT_STYLE = "insert"
+
+custom_theme = Theme(
+    {
+        "equal": "white",
+        "delete": "white on dark_red",
+        "insert": "white on dark_green",
+    }
+)
+
+
+def rich_diff_texts(before: str, after: str, console: Console = None) -> None:
+    if console is None:
+        console = Console(theme=custom_theme)
+    before_lines = before.splitlines()
+    after_lines = after.splitlines()
+    diff = list(
+        difflib.unified_diff(
+            before_lines, after_lines, fromfile="before", tofile="after", lineterm=""
+        )
+    )
+    text = Text()
+    for line in diff:
+        if line.startswith("+") and not line.startswith("+++"):
+            text.append(line + "\n", style=INSERT_STYLE)
+        elif line.startswith("-") and not line.startswith("---"):
+            text.append(line + "\n", style=DELETE_STYLE)
+        else:
+            text.append(line + "\n", style=EQUAL_STYLE)
+    console.print(text)
 
 
 def compute_new_version(version: str, bump: str) -> str:
@@ -131,9 +169,6 @@ def pretty_print_commits(commits: list[dict]) -> None:
         )
 
 
-import difflib
-
-
 def bump_version_from_git(
     project_file: Path,
     allow_dirty: bool = False,
@@ -168,10 +203,10 @@ def bump_version_from_git(
         lineterm="",
     )
     diff_output = "\n".join(diff)
-    typer.secho("Changes to be made:\n", fg=typer.colors.CYAN)
-    typer.echo(diff_output)
+    typer.secho("Changes:\n", fg=typer.colors.CYAN)
+    rich_diff_texts(original_content, updated_content)
 
-    if not yes:
+    if not yes and not dry_run:
         confirm = typer.confirm(
             f"\nDo you want to apply these changes and bump the version to {new_version}?"
         )
