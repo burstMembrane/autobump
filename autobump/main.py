@@ -178,21 +178,23 @@ def bump_version_from_git(
 ) -> str:
     original_content = project_file.read_text()
     doc = tomlkit.parse(original_content)
-    version_str = doc["project"]["version"]
+    current_version = doc["project"]["version"]
     if verbose:
-        typer.secho(f"Current version: {version_str}", fg=typer.colors.YELLOW)
+        typer.secho(f"Current version: {current_version}", fg=typer.colors.YELLOW)
     commits = get_commits_since_last_tag(allow_dirty=allow_dirty)
     if not commits:
         raise RuntimeError("No new commits found since last tag.")
     typer.secho(f"Found {len(commits)} commits since last tag.", fg=typer.colors.YELLOW)
     pretty_print_commits(commits)
     bump = infer_bump(commits)
-    new_version = compute_new_version(version_str, bump)
+    new_version = compute_new_version(current_version, bump)
 
     doc["project"]["version"] = new_version
     updated_content = tomlkit.dumps(doc)
 
-    typer.secho("Changes:\n", fg=typer.colors.CYAN)
+    typer.secho(
+        f"These changes will be applied to {project_file}\n", fg=typer.colors.CYAN
+    )
     rich_diff_texts(original_content, updated_content)
 
     if not yes and not dry_run:
@@ -206,4 +208,4 @@ def bump_version_from_git(
     if not dry_run:
         project_file.write_text(updated_content)
 
-    return new_version
+    return current_version, new_version
