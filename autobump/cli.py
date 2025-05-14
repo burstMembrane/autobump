@@ -23,9 +23,9 @@ def bump(
         new_version = bump_version_from_git(
             project_file, dry_run=dry_run, verbose=verbose
         )
-        typer.secho(f"✅ New version: {new_version}", fg=typer.colors.GREEN)
+        typer.secho(f"New version: {new_version}", fg=typer.colors.GREEN)
     except NoCommitsError:
-        typer.secho("❌ No commits found in the repository.", fg=typer.colors.RED)
+        typer.secho("No commits found in the repository.", fg=typer.colors.RED)
 
 
 if __name__ == "__main__":
