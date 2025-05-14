@@ -3,7 +3,7 @@ from pathlib import Path
 
 import typer
 
-from autobump.main import NoCommitsError, bump_version_from_git
+from autobump.main import DirtyRepoError, NoCommitsError, bump_version_from_git
 
 app = typer.Typer()
 
@@ -15,17 +15,20 @@ def bump(
         False, "--dry-run", "-d", help="Show version change without writing"
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show verbose output"),
+    allow_dirty: bool = typer.Option(
+        False, "--allow-dirty", help="Allow uncommitted changes"
+    ),
 ):
     """
     Bump version based on git commit history.
     """
     try:
         new_version = bump_version_from_git(
-            project_file, dry_run=dry_run, verbose=verbose
+            project_file, dry_run=dry_run, verbose=verbose, allow_dirty=allow_dirty
         )
         typer.secho(f"New version: {new_version}", fg=typer.colors.GREEN)
-    except NoCommitsError:
-        typer.secho("No commits found in the repository.", fg=typer.colors.RED)
+    except (NoCommitsError, DirtyRepoError) as e:
+        typer.secho(str(e), fg=typer.colors.RED)
 
 
 if __name__ == "__main__":

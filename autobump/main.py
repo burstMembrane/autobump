@@ -10,6 +10,23 @@ from git import GitCommandError, Repo
 from rich import print
 
 
+# Utility message functions
+def info(msg: str):
+    typer.secho(msg, fg=typer.colors.CYAN)
+
+
+def warn(msg: str):
+    typer.secho(msg, fg=typer.colors.YELLOW)
+
+
+def error(msg: str):
+    typer.secho(msg, fg=typer.colors.RED)
+
+
+def success(msg: str):
+    typer.secho(msg, fg=typer.colors.GREEN)
+
+
 def compute_new_version(version: str, bump: str) -> str:
     v = semver.VersionInfo.parse(version)
     if bump == "major":
@@ -24,9 +41,17 @@ class NoCommitsError(Exception):
     pass
 
 
-def get_commits_since_last_tag() -> list[dict]:
+class DirtyRepoError(Exception):
+    pass
+
+
+def get_commits_since_last_tag(allow_dirty: bool = False) -> list[dict]:
     repo = Repo(".")
 
+    if not allow_dirty and repo.is_dirty(untracked_files=True):
+        raise DirtyRepoError("There are uncommitted changes in your working directory.")
+    if allow_dirty and repo.is_dirty(untracked_files=True):
+        warn("There are uncommitted changes in your working directory.")
     # Handle case where there are no commits at all
     if not repo.head.is_valid():
         raise NoCommitsError("No commits found in the repository.")
@@ -100,13 +125,16 @@ def pretty_print_commits(commits: list[dict]) -> None:
 
 
 def bump_version_from_git(
-    project_file: Path, dry_run: bool = False, verbose: bool = False
+    project_file: Path,
+    allow_dirty: bool = False,
+    dry_run: bool = False,
+    verbose: bool = False,
 ) -> str:
     doc = tomlkit.parse(project_file.read_text())
     version_str = doc["project"]["version"]
     if verbose:
         typer.secho(f"Current version: {version_str}", fg=typer.colors.YELLOW)
-    commits = get_commits_since_last_tag()
+    commits = get_commits_since_last_tag(allow_dirty=allow_dirty)
     if not commits:
         raise RuntimeError("No new commits found since last tag.")
     if verbose:
