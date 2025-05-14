@@ -285,3 +285,6 @@ def bump_version_from_git(
         for step in steps:
             typer.echo(step)
         return current_version, new_version
+
+    # Always return the tuple at the end of the function
+    return current_version, new_version
