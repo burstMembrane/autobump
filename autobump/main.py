@@ -174,7 +174,7 @@ def pretty_print_commits(commits: list[dict]) -> None:
 
 
 def bump_version_from_git(
-    project_file: Path,
+    config_parser,
     allow_dirty: bool = False,
     dry_run: bool = False,
     verbose: bool = False,
@@ -185,9 +185,8 @@ def bump_version_from_git(
     push: bool = False,
     tag_name: str | None = None,
 ) -> tuple[str, str]:
-    original_content = project_file.read_text()
-    doc = tomlkit.parse(original_content)
-    current_version = doc["project"]["version"]
+    project_file = config_parser.get_file_path()
+    current_version = config_parser.get_version()
     if verbose:
         typer.secho(f"Current version: {current_version}", fg=typer.colors.YELLOW)
     commits = get_commits_since_last_tag(allow_dirty=allow_dirty)
@@ -198,8 +197,8 @@ def bump_version_from_git(
     bump = infer_bump(commits)
     new_version = compute_new_version(current_version, bump)
 
-    doc["project"]["version"] = new_version
-    updated_content = tomlkit.dumps(doc)
+    original_content = project_file.read_text()
+    updated_content = config_parser.set_version(new_version)
 
     typer.secho(
         f"These changes will be applied to {project_file}\n", fg=typer.colors.CYAN
@@ -217,7 +216,7 @@ def bump_version_from_git(
     final_message = commit_message or default_message
 
     if not dry_run:
-        project_file.write_text(updated_content)
+        config_parser.write_changes(updated_content)
         if commit:
             repo = Repo(".")
             repo.git.add(project_file)

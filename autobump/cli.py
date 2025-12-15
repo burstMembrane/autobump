@@ -1,21 +1,34 @@
 # cli.py
 from pathlib import Path
+from typing import Optional
 
 import typer
 
+from autobump.language_detection import (
+    UnsupportedLanguageError,
+    detect_language,
+    get_config_file_for_language,
+    get_supported_languages,
+)
 from autobump.main import (
     DirtyRepoError,
     NoCommitsError,
     NoCommitsSinceLastTagError,
     bump_version_from_git,
 )
+from autobump.parsers import get_parser
 
 app = typer.Typer()
 
 
 @app.command()
 def bump(
-    project_file: Path = typer.Option("pyproject.toml", help="Path to pyproject.toml"),
+    config_file: str = typer.Option(
+        "", "--config-file", "-f", help="Path to config file (auto-detected if not provided)"
+    ),
+    language: str = typer.Option(
+        "", "--language", "-l", help="Programming language (node/python/rust/go)"
+    ),
     dry_run: bool = typer.Option(
         False, "--dry-run", "-d", help="Show version change without writing"
     ),
@@ -37,10 +50,44 @@ def bump(
 ):
     """
     Bump version based on git commit history.
+    Auto-detects language and config file if not specified.
     """
     try:
+        # Auto-detect or use provided language/config
+        if not language and not config_file:
+            detected_language, detected_config_file = detect_language()
+            if verbose:
+                typer.secho(
+                    f"Auto-detected {detected_language} project with {detected_config_file.name}",
+                    fg=typer.colors.CYAN
+                )
+            language = detected_language
+            config_file_path = detected_config_file
+        elif language and not config_file:
+            config_file_path = get_config_file_for_language(language)
+        elif not language and config_file:
+            config_file_path = Path(config_file)
+            # Try to infer language from config file name
+            if config_file_path.name == "package.json":
+                language = "node"
+            elif config_file_path.name in ["pyproject.toml", "setup.py"]:
+                language = "python"
+            elif config_file_path.name == "Cargo.toml":
+                language = "rust"
+            elif config_file_path.name == "go.mod":
+                language = "go"
+            else:
+                raise UnsupportedLanguageError(
+                    f"Could not infer language from {config_file_path.name}. Please specify --language"
+                )
+        else:
+            config_file_path = Path(config_file)
+        
+        # Create the appropriate parser
+        config_parser = get_parser(language, config_file_path)
+        
         current_version, new_version = bump_version_from_git(
-            project_file,
+            config_parser,
             dry_run=dry_run,
             verbose=verbose,
             allow_dirty=allow_dirty,
@@ -59,8 +106,9 @@ def bump(
             typer.secho(
                 f"Bumped: {current_version} -> {new_version}", fg=typer.colors.GREEN
             )
-    except (NoCommitsError, DirtyRepoError, NoCommitsSinceLastTagError) as e:
+    except (NoCommitsError, DirtyRepoError, NoCommitsSinceLastTagError, UnsupportedLanguageError, FileNotFoundError, ValueError, KeyError) as e:
         typer.secho(str(e), fg=typer.colors.RED)
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":
